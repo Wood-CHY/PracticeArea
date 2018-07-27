@@ -1,0 +1,41 @@
+
+javascript: (function() { 
+q = document.getSelection(); 
+if (!q) {void(q = prompt('Wikipediakeywords:', ''))}; 
+if (q) location.href = 'http://en.wikipedia.org/w/wiki.phtml?search=' + escape(q) 
+})()
+
+Autofill bookmarklet demo script:
+javascript: (function(){
+/*Permit # (value can be any text)
+In chrome: right click and "inspect" on form item to bring up the html code in the developer tools
+document: looks at whatever is open in the developer tool 
+getElementById('id'):identifies an element in the html (in the Elements tab) via its id (can find in html)
+.value = '' assigns a value*/ 
+document.getElementById('txtpermitnumber').value = '12345676';
+/*Affiliate Category - same as above but value must be one of the options visible in the developer tools Elements tab*/
+document.getElementById('ddlaffiliate').value = 'Associations or Professional Societies';
+/*Collection Category*/
+document.getElementById('ddlcollection').value = 'Biomonitoring';
+/*Permit Type*/
+document.getElementById('ddlpermittype').value = 'Salvage';
+/*Taxa Group - need to see group ID number in developer tool*/
+document.getElementById('ddltaxagroup').value = '2';
+document.getElementById('ddltaxagroupspecies').value = '13';
+/*Target Species - cannot get this to run properly - commented out for now... 
+a workaround would be to make a second bookmarklet that only does this, bc it seems the page needs to refresh after the taxa is entered to give species options
+document.querySelector('#lbtargetspecies option[value="Amphiuma, two-toed ----- Amphiuma means "]').selected = true;
+document.querySelector('#lbtargetspecies option[value="Bullfrog, American ----- Lithobates catesbeianus "]').selected = true; */
+
+/*Coordinate/Geographic Information radio button - click functions acts as a mouse click, for a radio button can click it again and again and have the same result*/ 
+document.getElementById('rbl_coordinategeographicInfo_0').click();
+/*Datum/Spheroid radio button*/
+document.getElementById('rbl_datumspheroid_1').click();
+/*Check box - can use .checked function or .click, but for a .click multiple runs would check and uncheck the box*/
+document.getElementById('chbxsameaspermittee').checked=true;
+/*Collection Date*/
+document.getElementById('txtcollectiondate').value = '01/12/2018';
+
+document.getElementById('txtcollectorfullname').value = 'Jenny';
+
+}());
