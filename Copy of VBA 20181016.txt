@@ -1,0 +1,258 @@
+
+'VBA Code from the VDGIF Scientific Collection Permit
+'Designed to auto populate the Web Form with data prepared in Excel.
+
+
+'Allows the IE browser window to be set to different states.
+Declare Function apiShowWindow Lib "user32" Alias "ShowWindow" _
+            (ByVal hwnd As Long, ByVal nCmdShow As Long) As Long
+
+Global Const SW_MAXIMIZE = 3
+Global Const SW_SHOWNORMAL = 1
+Global Const SW_SHOWMINIMIZED = 2
+
+
+
+
+
+Sub FillForm()
+
+Dim IE, post, elem As Object
+Dim doc As HTMLDocument
+
+
+'Set up browser to open to full screen and wait while loads
+Set IE = CreateObject("InternetExplorer.Application")
+IE.Visible = True
+'Calls local function to set the browser window to maximum.
+apiShowWindow IE.hwnd, SW_MAXIMIZE
+IE.navigate "https://vafwis.dgif.virginia.gov/collection_permits"
+    Do While IE.Busy
+        Application.Wait DateAdd("s", 1, Now)
+    Loop
+
+'Create shortcut that enables the intellisense to work in code below.
+Set doc = IE.document
+    
+    
+    
+'Populate General Information Text/Choice Fields
+Dim I As Integer
+Dim htmlIDs() As String
+htmlIDs() = Split("txtpermitnumber,ddlaffiliate,ddlcollection,ddlpermittype,ddltaxagroup,txtpermitteefirstname,txtpermitteelastname,txtaffiliation,txtphonenumber,txtemail,txtdataenteredbyfirstname,txtdataenteredbylastname,txtdataenteredbyaffiliation,txtdataenteredbyphonenumber,txtdataenteredbyemailaddress", ",")
+'htmlIDs() = Split("ddlaffiliate,ddlcollection,ddlpermittype,ddltaxagroup,txtpermitteefirstname,txtpermitteelastname,txtaffiliation,txtphonenumber,txtemail,txtdataenteredbyfirstname,txtdataenteredbylastname,txtdataenteredbyaffiliation,txtdataenteredbyphonenumber,txtdataenteredbyemailaddress", ",")
+
+For I = LBound(htmlIDs()) To UBound(htmlIDs())
+    'doc.getElementById("txtpermitnumber").Value = ActiveSheet.Range("txtpermitnumber").Value
+    doc.getElementById(htmlIDs(I)).Value = ActiveSheet.Range(htmlIDs(I)).Value
+    Do While IE.Busy
+        Application.Wait DateAdd("s", 1, Now)
+    Loop
+Next I
+
+doc.getElementById("ddltaxagroup").FireEvent ("onchange")
+Do While IE.Busy
+    Application.Wait DateAdd("s", 1, Now)
+Loop
+
+'Populate the Target Species choice list
+Dim lb, opt As Object
+Dim a As Integer
+'doc.getElementById("lbtargetspecies").Value = ActiveSheet.Range("lbtargetspecies").Value
+'doc.getElementById("lbtargetspecies").selectedIndex = "Alderfly ----- Sialis mohri "
+Set lb = doc.getElementById("lbtargetspecies")
+'a = Int(ActiveSheet.Range("lbtargetspecies").Value)
+Set opt = lb.Item(0)
+opt.Selected = True
+
+'doc.getElementById("lbtargetspecies")(0).Item(0).Selected = True
+
+
+'Populate General Information Radio Buttons
+'Options are hard coded based on this project.  Will need to update or make dynamic for other projects.
+doc.getElementById("rbl_coordinategeographicInfo_1").Click
+Do While IE.Busy
+    Application.Wait DateAdd("s", 1, Now)
+Loop
+
+doc.getElementById("rbl_datumspheroid_0").Click
+Do While IE.Busy
+    Application.Wait DateAdd("s", 1, Now)
+Loop
+
+'Duplicated code since this doesn't seem to populate consistently
+doc.getElementById("rbl_datumspheroid_0").Click
+Do While IE.Busy
+    Application.Wait DateAdd("s", 1, Now)
+Loop
+
+
+Application.ScreenUpdating = False
+'Populate Field Collectors Names
+Dim firstName, lastName As String
+Dim k As Integer
+ActiveSheet.Range("CollectorNames").Select
+For k = 1 To 5
+    ActiveCell.Offset(1, 0).Select
+    If ActiveCell.Value <> "" Then
+        firstName = ActiveCell.Value
+        ActiveCell.Offset(1, 0).Select
+        If ActiveCell.Value <> "" Then
+            lastName = ActiveCell.Value
+            ActiveCell.Offset(1, 0).Select
+            doc.getElementById("txtcollectorfirstname").Value = firstName
+            doc.getElementById("txtcollectorlastname").Value = lastName
+            doc.getElementById("btnaddcollector").Click
+            Do While IE.Busy
+                Application.Wait DateAdd("s", 1, Now)
+            Loop
+        Else
+            MsgBox "Please enter a Last Name", vbOKOnly, "Missing Name"
+            Exit For
+        End If
+    Else
+        ActiveCell.Offset(2, 0).Select
+    End If
+Next k
+Application.ScreenUpdating = True
+
+
+'Populate the Collection Site basic info.
+Dim j As Integer
+Dim siteIDs() As String
+siteIDs() = Split("txtsiteid,txtwaterbody,txtcollectiondate,txtsitedescription,ddlcounty,ddlcollectionmethod,ddlcollectioneffort,txtlatitudedegrees,txtlongitudedegrees", ",")
+
+For j = LBound(siteIDs()) To UBound(siteIDs())
+    If siteIDs(j) = "txtcollectiondate" Then
+        'doc.getElementById("txtpermitnumber").Value = ActiveSheet.Range("txtpermitnumber").Value
+        doc.getElementById(siteIDs(j)).Value = Format(ActiveSheet.Range(siteIDs(j) & "1").Value, "mm/dd/yyyy")
+        Do While IE.Busy
+            Application.Wait DateAdd("s", 1, Now)
+        Loop
+    Else
+        'doc.getElementById("txtpermitnumber").Value = ActiveSheet.Range("txtpermitnumber").Value
+        doc.getElementById(siteIDs(j)).Value = ActiveSheet.Range(siteIDs(j) & "1").Value
+        Do While IE.Busy
+            Application.Wait DateAdd("s", 1, Now)
+        Loop
+    End If
+Next j
+
+
+Application.ScreenUpdating = False
+'Populate Field Collectors Names
+Dim method, effort As String
+Dim m As Integer
+ActiveSheet.Range("SiteMethods").Select
+ActiveCell.Offset(6, 0).Select
+For m = 1 To 3
+    If ActiveCell.Value <> "" Then
+        method = ActiveCell.Value
+        ActiveCell.Offset(1, 0).Select
+        If ActiveCell.Value <> "" Then
+            effort = ActiveCell.Value
+            ActiveCell.Offset(2, 0).Select
+            doc.getElementById("ddlcollectionmethod").Value = method
+            Do While IE.Busy
+                Application.Wait DateAdd("s", 1, Now)
+            Loop
+            doc.getElementById("ddlcollectioneffort").Value = effort
+            Do While IE.Busy
+                Application.Wait DateAdd("s", 1, Now)
+            Loop
+            doc.getElementById("btnaddmethodeffort").Click
+            Do While IE.Busy
+                Application.Wait DateAdd("s", 1, Now)
+            Loop
+        Else
+            MsgBox "Please enter an Effort for Method #" & m, vbOKOnly, "Missing Effort"
+            Exit For
+        End If
+    Else
+        'MsgBox "Skipped Method #" & m, vbOKOnly, "No Method"
+        ActiveCell.Offset(3, 0).Select
+    End If
+Next m
+
+
+
+'Add next row of species information.
+'Starts at the top of the table and scrolls down to the first row without a "Submitted" flag and then checks for a Taxa Group value to continue.
+ActiveSheet.Range("SpeciesSubmitted").Select
+Do While ActiveCell.Value <> ""
+    ActiveCell.Offset(1, 0).Select
+Loop
+
+ActiveCell.Offset(0, 2).Select
+If ActiveCell.Value = "" Then
+    MsgBox "No more Species data to enter", vbOKOnly, "Done"
+Else
+    doc.getElementById("ddltaxagroupspecies").Value = ActiveCell.Value
+    Do While IE.Busy
+        Application.Wait DateAdd("s", 1, Now)
+    Loop
+    doc.getElementById("ddltaxagroupspecies").FireEvent ("onchange")
+    Do While IE.Busy
+        Application.Wait DateAdd("s", 1, Now)
+    Loop
+    
+    ActiveCell.Offset(0, 4).Select
+    doc.getElementById("lbspecies").Value = ActiveCell.Value
+    Do While IE.Busy
+        Application.Wait DateAdd("s", 1, Now)
+    Loop
+    
+    ActiveCell.Offset(0, 1).Select
+    doc.getElementById("txtquantity").Value = ActiveCell.Value
+    Do While IE.Busy
+        Application.Wait DateAdd("s", 1, Now)
+    Loop
+    
+    ActiveCell.Offset(0, 1).Select
+    doc.getElementById("ddlcondition").Value = ActiveCell.Value
+    Do While IE.Busy
+        Application.Wait DateAdd("s", 1, Now)
+    Loop
+    
+    ActiveCell.Offset(0, 1).Select
+    doc.getElementById("ddlfinaldisposition").Value = ActiveCell.Value
+    Do While IE.Busy
+        Application.Wait DateAdd("s", 1, Now)
+    Loop
+    doc.getElementById("ddlfinaldisposition").FireEvent ("onchange")
+    Do While IE.Busy
+        Application.Wait DateAdd("s", 2, Now)
+    Loop
+    
+    ActiveCell.Offset(0, 1).Select
+    doc.getElementById("Txtdispositionlocation").Value = ActiveCell.Value
+    Do While IE.Busy
+        Application.Wait DateAdd("s", 1, Now)
+    Loop
+    
+    ActiveCell.Offset(0, 1).Select
+    If ActiveCell.Value <> "" Then
+        doc.getElementById("txtfieldtagnumber").Value = ActiveCell.Value
+        Do While IE.Busy
+            Application.Wait DateAdd("s", 1, Now)
+        Loop
+    End If
+    
+    ActiveCell.Offset(0, 1).Select
+    If ActiveCell.Value <> "" Then
+        doc.getElementById("txtoverallcomments").Value = ActiveCell.Value
+        Do While IE.Busy
+            Application.Wait DateAdd("s", 1, Now)
+        Loop
+    End If
+    
+    
+    'Go mark row as done.
+    ActiveCell.Offset(0, -12).Select
+    Application.ScreenUpdating = True
+    ActiveCell.Value = "done"
+End If
+
+MsgBox "Script Complete", vbOKOnly, "Done"
+
+End Sub
